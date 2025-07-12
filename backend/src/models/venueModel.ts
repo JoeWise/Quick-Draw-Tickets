@@ -8,14 +8,15 @@ export async function findVenuesByDistance(lon: string, lat: string, limit: numb
             SELECT id, name, address, geog,
                 ST_Distance(
                     geog,
-                    ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
                 ) AS distance_meters
             FROM venues
             ORDER BY distance_meters ASC
-            LIMIT ${limit} OFFSET ${offset}
-            `
+            LIMIT $3 OFFSET $4
+            `;
+    const params = [lon, lat, limit, offset];
     
-    const result: QueryResult<Venue> = await db.query(q);
+    const result: QueryResult<Venue> = await db.query(q, params);
 
     return result.rows;
 }
