@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { NearbyQuery } from '../schemas/nearbySchema';
 import { geocodeIP, geocodeLocation } from '../utils/geocode';
 import { getClientIp } from '../utils/getClientIP';
+import { findEventsByVenueID } from '../models/eventModels';
 
 export const getNearbyVenues = async ( req: Request, res: Response): Promise<void> => {
     
@@ -54,5 +55,20 @@ export const getNearbyVenues = async ( req: Request, res: Response): Promise<voi
     {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch venues' });
+    }
+}
+
+export const getVenueDetails = async (req: Request, res: Response) => {
+    try
+    {
+        const venue = await venueModel.findVenueByID(+req.params.id);
+        const eventsAtVenue = await findEventsByVenueID(+req.params.id);
+
+        res.json({ "venue": venue, "events": eventsAtVenue});
+    }
+    catch (err)
+    {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch venue details' });
     }
 }

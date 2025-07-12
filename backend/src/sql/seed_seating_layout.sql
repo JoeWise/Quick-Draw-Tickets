@@ -1,0 +1,1 @@
+INSERT INTO seating_layouts (venue_id, name) VALUES (1, 'seated_1')
