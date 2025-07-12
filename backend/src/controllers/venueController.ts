@@ -1,0 +1,58 @@
+import * as venueModel from '../models/venueModel';
+import { Request, Response } from 'express';
+import { NearbyQuery } from '../schemas/nearbySchema';
+import { geocodeIP, geocodeLocation } from '../utils/geocode';
+import { getClientIp } from '../utils/getClientIP';
+
+export const getNearbyVenues = async ( req: Request, res: Response): Promise<void> => {
+    
+    let { page, perPage, lat, lon, location } = (req as any).validatedQuery;// req.query as unknown as NearbyQuery;
+    
+    if (!lat || !lon)
+    {
+        if (location)
+        {
+            // Geocode location and set lat and lon.
+            const geocoded = await geocodeLocation(location);
+            if (geocoded)
+            {
+                lat = geocoded.lat;
+                lon = geocoded.lon;
+            }
+        }
+        
+        // If location geocoding failed, try IP address.
+        if (!lat || !lon)
+        {
+            // geolocate IP address.
+            const ipAddress = getClientIp(req);
+            if (ipAddress)
+            {
+                const geocoded = await geocodeIP(ipAddress)
+                if (geocoded)
+                {
+                    lat = geocoded.lat;
+                    lon = geocoded.lon;
+                }
+            }
+        }
+
+        // If IP address failed, set to deafult (Los Angeles).
+        if (!lat || !lon)
+        {
+            lat = 34.0536909;
+            lon = -118.2427660;
+        }
+    }
+
+    try 
+    {
+        const venues = await venueModel.findVenuesByDistance(lon.toString(), lat.toString(), perPage, (page - 1) * perPage);
+        res.json(venues);
+    }
+    catch (err) 
+    {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch venues' });
+    }
+}
