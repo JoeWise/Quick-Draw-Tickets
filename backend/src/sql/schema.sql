@@ -47,7 +47,8 @@ CREATE TABLE events (
   creator_id INTEGER REFERENCES users(id),
   title TEXT NOT NULL,
   description TEXT,
-  datetime TIMESTAMP NOT NULL,
+  start_datetime TIMESTAMP NOT NULL,
+  end_datetime TIMESTAMP NOT NULL,
   venue_id INTEGER NOT NULL REFERENCES venues(id),
   layout_id INTEGER NOT NULL REFERENCES seating_layouts(id)
 );
@@ -66,4 +67,14 @@ CREATE TABLE tickets (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   UNIQUE (event_id, seat_id)
+);
+
+CREATE TYPE venue_user_role AS ENUM ('owner', 'editor', 'viewer');
+
+CREATE TABLE venue_users (
+    venue_id INTEGER NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role venue_user_role NOT NULL DEFAULT 'owner',
+
+    PRIMARY KEY (venue_id, user_id)
 );

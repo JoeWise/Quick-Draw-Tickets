@@ -1,9 +1,10 @@
-import * as venueModel from '../models/venueModel';
 import { Request, Response } from 'express';
-import { NearbyQuery } from '../schemas/nearbySchema';
 import { geocodeIP, geocodeLocation } from '../utils/geocode';
 import { getClientIp } from '../utils/getClientIP';
 import { findEventsByVenueID } from '../models/eventModels';
+import * as venueModel from '../models/venueModel';
+import { AuthenticatedRequest } from '../types/express';
+import { Venue } from '../types/Venue';
 
 export const getNearbyVenues = async ( req: Request, res: Response): Promise<void> => {
     
@@ -71,4 +72,27 @@ export const getVenueDetails = async (req: Request, res: Response) => {
         console.error(err);
         res.status(500).json({ error: 'Failed to fetch venue details' });
     }
+}
+
+export async function createVenue(req: AuthenticatedRequest, res: Response)
+{
+    let lat = 0;
+    let lon = 0;
+
+    if (req.body.address)
+    {
+        const geoData = await geocodeLocation(req.body.address);
+
+        if (!geoData) 
+        {
+            return res.status(400).json({ error: 'Unable to geocode address' });
+        }
+
+        lat = geoData.lat;
+        lon = geoData.lon;
+    }
+
+    const venue: Venue = await venueModel.insertVenueWithOwner(req.body.name, req.body.address, lon, lat, req.user!.id)
+
+    return res.status(201).json(venue);
 }

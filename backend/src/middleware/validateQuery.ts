@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ZodType, ZodError } from 'zod';
+import { ZodType } from 'zod';
 
 export function validateQuery(schema: ZodType) 
 {
@@ -8,13 +8,12 @@ export function validateQuery(schema: ZodType)
 
         if (!result.success) 
         {
-            const error: ZodError = result.error;
             return res.status(400).json({
                 error: 'Invalid query parameters',
-                issues: error.issues.map((issue) => ({
+                issues: result.error.issues.map((issue) => ({
                     path: issue.path.join('.'),
-                    message: issue.message,
-                })),
+                    message: issue.message
+                }))
             });
         }
 
