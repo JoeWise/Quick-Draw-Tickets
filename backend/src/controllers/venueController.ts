@@ -96,3 +96,30 @@ export async function createVenue(req: AuthenticatedRequest, res: Response)
 
     return res.status(201).json(venue);
 }
+
+export async function createSeatingLayout(req: AuthenticatedRequest, res: Response)
+{
+    const { venueID } = req.params;
+    const { name, sections } = req.body;
+    const userID = req.user!.id;
+
+    const authorized = await venueModel.hasVenuePermission(userID, Number(venueID), ['owner', 'editor']);
+
+    if (!authorized) 
+    {
+        res.status(403).json({ error: 'Unauthorized' });
+        console.error('Error creating seating layout: Unauthorized');
+        return;
+    }
+
+    try
+    {
+        await venueModel.createSeatingLayoutWithSections(Number(venueID), name, sections);
+        res.status(201).json({ message: 'Seating layout created successfully' });
+    }
+    catch (err)
+    {
+        console.error('Error creating seating layout:', err);
+        res.status(500).json({ error: "Failed to created seating layout" });
+    }
+}
