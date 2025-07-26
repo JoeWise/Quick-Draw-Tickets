@@ -23,7 +23,7 @@ CREATE TABLE seating_layouts (
 
 CREATE TABLE layout_sections (
   id SERIAL PRIMARY KEY,
-  layout_id INTEGER NOT NULL REFERENCES seating_layouts(id),
+  layout_id INTEGER NOT NULL REFERENCES seating_layouts(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('assigned', 'ga')),
 
@@ -32,7 +32,7 @@ CREATE TABLE layout_sections (
 
 CREATE TABLE section_seats (
   id SERIAL PRIMARY KEY,
-  section_id INTEGER NOT NULL REFERENCES layout_sections(id),
+  section_id INTEGER NOT NULL REFERENCES layout_sections(id) ON DELETE CASCADE,
   row TEXT,
   seat_number TEXT NOT NULL,
   seat_label TEXT GENERATED ALWAYS AS (
