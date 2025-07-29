@@ -121,6 +121,6 @@ export async function createSeatingLayout(req: AuthenticatedRequest, res: Respon
     catch (err)
     {
         console.error('Error creating seating layout:', err);
-        res.status(500).json({ error: "Failed to created seating layout" });
+        res.status(500).json({ error: "Failed to create seating layout" });
     }
 }
