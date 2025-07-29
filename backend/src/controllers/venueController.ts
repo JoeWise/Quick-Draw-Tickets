@@ -6,9 +6,9 @@ import * as venueModel from '../models/venueModel';
 import { AuthenticatedRequest } from '../types/express';
 import { Venue } from '../types/Venue';
 
-export const getNearbyVenues = async ( req: Request, res: Response): Promise<void> => {
-    
-    let { page, perPage, lat, lon, location } = (req as any).validatedQuery;// req.query as unknown as NearbyQuery;
+export async function getNearbyVenues( req: Request, res: Response)
+{   
+    let { page, perPage, lat, lon, location } = (req as any).validatedQuery;
     
     if (!lat || !lon)
     {
@@ -59,7 +59,8 @@ export const getNearbyVenues = async ( req: Request, res: Response): Promise<voi
     }
 }
 
-export const getVenueDetails = async (req: Request, res: Response) => {
+export async function getVenueDetails(req: Request, res: Response) 
+{
     try
     {
         const venue = await venueModel.findVenueByID(+req.params.id);
