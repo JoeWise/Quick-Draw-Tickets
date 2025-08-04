@@ -108,7 +108,7 @@ export async function createSeatingLayout(req: AuthenticatedRequest, res: Respon
 export async function createPricingLayout(req: AuthenticatedRequest, res: Response)
 {
     const { venueID, seatingLayoutID } = req.params;
-    const { name, ticket_prices } = req.body;
+    const { name, seat_prices } = req.body;
     const userID = req.user!.id;
 
     const authorized = await venueModel.hasVenuePermission(userID, Number(venueID), ['owner', 'editor']);
@@ -122,7 +122,7 @@ export async function createPricingLayout(req: AuthenticatedRequest, res: Respon
 
     try
     {
-        await venueModel.insertPricingLayout(Number(venueID), Number(seatingLayoutID), name, ticket_prices);
+        await venueModel.insertPricingLayout(Number(venueID), Number(seatingLayoutID), name, seat_prices);
         res.status(201).json({ message: 'Pricing layout created successfully' });
     }
     catch (err)

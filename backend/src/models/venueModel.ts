@@ -4,7 +4,7 @@ import { Venue } from '../types/Venue';
 import { SeatingLayout, SeatingLayoutWithPrice } from '../types/SeatingLayout';
 import { SectionType } from '../types/SectionType';
 import { CreateLayoutSection } from '../schemas/createSeatingLayoutSchema';
-import { TicketPrice } from '../schemas/createPricingLayoutSchema';
+import { SeatPrice } from '../schemas/createPricingLayoutSchema';
 import { GetLayoutSection, GetLayoutSectionWithPrice, GetSeatingLayout, GetSeatingLayoutWithPrice } from '../schemas/getSeatingLayoutSchema';
 
 export async function findVenueByID(id: number): Promise<Venue | undefined>
@@ -203,7 +203,7 @@ export async function findSeatingLayoutByID(seatingLayoutID: number): Promise<Ge
     return layout;
 }
 
-export async function insertPricingLayout(venueID: number, seatingLayoutID: number, name: string, ticket_prices: TicketPrice[])
+export async function insertPricingLayout(venueID: number, seatingLayoutID: number, name: string, seat_prices: SeatPrice[])
 {
     await db.queryAsTransaction(async (client) => {
         // Insert pricing layout.
@@ -219,11 +219,11 @@ export async function insertPricingLayout(venueID: number, seatingLayoutID: numb
         const pricingLayoutID = layoutRes.rows[0].id;
 
         // Insert each ticket price.
-        for (const ticket_price of ticket_prices) 
+        for (const ticket_price of seat_prices) 
         {
             const ticketRes = await client.query(
                 `
-                INSERT INTO ticket_prices (pricing_layout_id, section_id, seat_id, price)
+                INSERT INTO seat_prices (pricing_layout_id, section_id, seat_id, price)
                 VALUES ($1, $2, $3, $4)
                 `,
                 [pricingLayoutID, ticket_price.section_id, ticket_price.seat_id || null, ticket_price.price]
@@ -250,7 +250,7 @@ export async function findSeatingLayoutWithPrices(seatingLayoutID: number, prici
             FROM seating_layouts sl
             JOIN layout_sections ls ON ls.seating_layout_id = sl.id
             JOIN section_seats ss ON ss.section_id = ls.id
-            LEFT JOIN ticket_prices tp
+            LEFT JOIN seat_prices tp
                 ON tp.pricing_layout_id = $2
                 AND tp.section_id = ls.id
                 AND tp.seat_id = ss.id

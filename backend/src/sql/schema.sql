@@ -51,18 +51,14 @@ CREATE TABLE pricing_layouts (
   UNIQUE (venue_id, seating_layout_id, name)
 );
 
-CREATE TABLE ticket_prices (
+CREATE TABLE seat_prices (
   id SERIAL PRIMARY KEY,
   pricing_layout_id INTEGER NOT NULL REFERENCES pricing_layouts(id) ON DELETE CASCADE,
   section_id INTEGER NOT NULL REFERENCES layout_sections(id) ON DELETE CASCADE,
-  seat_id INTEGER REFERENCES section_seats(id) ON DELETE CASCADE,
+  seat_id INTEGER NOT NULL REFERENCES section_seats(id) ON DELETE CASCADE,
   price NUMERIC(10, 2) NOT NULL,
 
   UNIQUE (pricing_layout_id, seat_id),
-  CHECK (
-    (seat_id IS NULL AND section_id IS NOT NULL) OR
-    (seat_id IS NOT NULL AND section_id IS NOT NULL)
-  )
 );
 
 CREATE TABLE events (

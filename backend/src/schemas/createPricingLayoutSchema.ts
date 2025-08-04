@@ -1,27 +1,21 @@
 import { z } from 'zod';
 
-const ticketPriceSchema = z.object({
+const seatPriceSchema = z.object({
   section_id: z.number().int(),
-  seat_id: z.number().int().nullable(),
+  seat_id: z.number().int(),
   price: z.number().nonnegative(),
-}).refine((data) => {
-  // Ensure either seat-level or section-level pricing is valid
-  return (data.seat_id === null && data.section_id !== null) ||
-         (data.seat_id !== null && data.section_id !== null);
-}, {
-  message: 'Either section-level (seat_id = null) or seat-level (seat_id and section_id) pricing must be provided.'
 });
 
-export type TicketPrice = z.infer<typeof ticketPriceSchema>;
+export type SeatPrice = z.infer<typeof seatPriceSchema>;
 
 export const pricingLayoutSchema = z.object({
   name: z.string().min(1),
-  ticket_prices: z.array(ticketPriceSchema)
+  seat_prices: z.array(seatPriceSchema)
 });
 
 // {
 //   "name": "Main Concert Pricing",
-//   "ticket_prices": [
+//   "seat_prices": [
 //     { "section_id": 1, "seat_id": 1, "price": 75.00 },
 //     { "section_id": 1, "seat_id": 2, "price": 75.00 },
 //     { "section_id": 1, "seat_id": 3, "price": 75.00 },
