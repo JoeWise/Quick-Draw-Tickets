@@ -95,12 +95,39 @@ export async function createSeatingLayout(req: AuthenticatedRequest, res: Respon
 
     try
     {
-        await venueModel.createSeatingLayoutWithSections(Number(venueID), name, sections);
+        await venueModel.insertSeatingLayoutWithSections(Number(venueID), name, sections);
         res.status(201).json({ message: 'Seating layout created successfully' });
     }
     catch (err)
     {
         console.error('Error creating seating layout:', err);
         res.status(500).json({ error: "Failed to create seating layout" });
+    }
+}
+
+export async function createPricingLayout(req: AuthenticatedRequest, res: Response)
+{
+    const { venueID, seatingLayoutID } = req.params;
+    const { name, ticket_prices } = req.body;
+    const userID = req.user!.id;
+
+    const authorized = await venueModel.hasVenuePermission(userID, Number(venueID), ['owner', 'editor']);
+
+    if (!authorized) 
+    {
+        res.status(403).json({ error: 'Unauthorized' });
+        console.error('Error creating pricing layout: Unauthorized');
+        return;
+    }
+
+    try
+    {
+        await venueModel.insertPricingLayout(Number(venueID), Number(seatingLayoutID), name, ticket_prices);
+        res.status(201).json({ message: 'Pricing layout created successfully' });
+    }
+    catch (err)
+    {
+        console.error('Error creating pricing layout:', err);
+        res.status(500).json({ error: "Failed to create pricing layout" });
     }
 }

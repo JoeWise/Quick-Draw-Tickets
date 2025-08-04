@@ -1,7 +1,11 @@
-import { LayoutSection } from '../schemas/createSeatingLayoutSchema';
-import { Venue } from '../types/Venue';
 import db from '../utils/db';
 import { QueryResult } from 'pg';
+import { Venue } from '../types/Venue';
+import { SeatingLayout, SeatingLayoutWithPrice } from '../types/SeatingLayout';
+import { SectionType } from '../types/SectionType';
+import { CreateLayoutSection } from '../schemas/createSeatingLayoutSchema';
+import { TicketPrice } from '../schemas/createPricingLayoutSchema';
+import { GetLayoutSection, GetLayoutSectionWithPrice, GetSeatingLayout, GetSeatingLayoutWithPrice } from '../schemas/getSeatingLayoutSchema';
 
 export async function findVenueByID(id: number): Promise<Venue | undefined>
 {
@@ -129,6 +133,171 @@ export async function insertSeatingLayoutWithSections(venueID: number, layoutNam
             }
         }
     });
+}
+
+export async function findSeatingLayoutByID(seatingLayoutID: number): Promise<GetSeatingLayout | undefined>
+{
+    const q = `
+            SELECT
+                sl.id AS seating_layout_id,
+                sl.venue_id,
+                sl.name AS layout_name,
+
+                ls.id AS section_id,
+                ls.name AS section_name,
+                ls.type AS section_type,
+
+                ss.id AS seat_id,
+                ss.row,
+                ss.seat_number,
+                ss.seat_label
+
+            FROM seating_layouts sl
+            JOIN layout_sections ls ON sl.id = ls.seating_layout_id
+            LEFT JOIN section_seats ss ON ls.id = ss.section_id
+            WHERE sl.id = $1
+            ORDER BY ls.id, ss.id;
+            `;
+    const params = [seatingLayoutID];
+
+    const result: QueryResult<SeatingLayout> = await db.query(q, params);
+
+    if (result.rows.length == 0)
+        return;
+
+    const layout: GetSeatingLayout = {
+        seating_layout_id: result.rows[0].seating_layout_id,
+        venue_id: result.rows[0].venue_id,
+        name: result.rows[0].layout_name,
+        sections: []
+    };
+
+    const sectionMap = new Map();
+
+    for (const row of result.rows) 
+    {
+        let section: GetLayoutSection = sectionMap.get(row.section_id);
+        if (!section) 
+        {
+            section = {
+                layout_section_id: row.section_id,
+                name: row.section_name,
+                type: row.section_type as SectionType,
+                seats: []
+            };
+            sectionMap.set(row.section_id, section);
+            layout.sections.push(section);
+        }
+
+        if (row.seat_id) 
+        {
+            section.seats.push({
+                section_seat_id: row.seat_id,
+                row: row.row,
+                seat_number: row.seat_number,
+                seat_label: row.seat_label
+            });
+        }
+    }
+
+    return layout;
+}
+
+export async function insertPricingLayout(venueID: number, seatingLayoutID: number, name: string, ticket_prices: TicketPrice[])
+{
+    await db.queryAsTransaction(async (client) => {
+        // Insert pricing layout.
+        const layoutRes = await client.query(        
+            `
+            INSERT INTO pricing_layouts (venue_id, seating_layout_id, name)
+            VALUES ($1, $2, $3)
+            RETURNING id
+            `,
+            [venueID, seatingLayoutID, name]
+        );
+
+        const pricingLayoutID = layoutRes.rows[0].id;
+
+        // Insert each ticket price.
+        for (const ticket_price of ticket_prices) 
+        {
+            const ticketRes = await client.query(
+                `
+                INSERT INTO ticket_prices (pricing_layout_id, section_id, seat_id, price)
+                VALUES ($1, $2, $3, $4)
+                `,
+                [pricingLayoutID, ticket_price.section_id, ticket_price.seat_id || null, ticket_price.price]
+            );
+        }
+    });
+}
+
+export async function findSeatingLayoutWithPrices(seatingLayoutID: number, pricingLayoutID: number): Promise<GetSeatingLayoutWithPrice | undefined>
+{
+    const q = `
+            SELECT
+                sl.id             AS layout_id,
+                sl.venue_id,
+                sl.name           AS layout_name,
+                ls.id             AS section_id,
+                ls.name           AS section_name,
+                ls.type           AS section_type,
+                ss.id             AS seat_id,
+                ss.row,
+                ss.seat_number,
+                ss.seat_label,
+                tp.price          AS price
+            FROM seating_layouts sl
+            JOIN layout_sections ls ON ls.seating_layout_id = sl.id
+            JOIN section_seats ss ON ss.section_id = ls.id
+            LEFT JOIN ticket_prices tp
+                ON tp.pricing_layout_id = $2
+                AND tp.section_id = ls.id
+                AND tp.seat_id = ss.id
+            WHERE sl.id = $1
+            ORDER BY ls.id, ss.id;
+            `;
+    const params = [seatingLayoutID, pricingLayoutID];
+
+    const result: QueryResult<SeatingLayoutWithPrice> = await db.query(q, params);
+
+    if (result.rows.length == 0)
+        return;
+
+    const layout: GetSeatingLayoutWithPrice = {
+        seating_layout_id: result.rows[0].seating_layout_id,
+        venue_id: result.rows[0].venue_id,
+        name: result.rows[0].layout_name,
+        sections: []
+    };
+
+    const sectionMap = new Map();
+
+    for (const row of result.rows) 
+    {
+        let section: GetLayoutSectionWithPrice = sectionMap.get(row.section_id);
+        if (!section) 
+        {
+            section = {
+                layout_section_id: row.section_id,
+                name: row.section_name,
+                type: row.section_type as SectionType,
+                seats: []
+            };
+            sectionMap.set(row.section_id, section);
+            layout.sections.push(section);
+        }
+
+        section.seats.push({
+            section_seat_id: row.seat_id,
+            row: row.row,
+            seat_number: row.seat_number,
+            seat_label: row.seat_label,
+            price: row.price
+        });
+    }
+
+    return layout;
 }
 
 export async function hasVenuePermission(userID: number, venueID: number, allowedRoles: ('owner' | 'editor' | 'viewer')[]): Promise<boolean> {

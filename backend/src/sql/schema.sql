@@ -42,15 +42,40 @@ CREATE TABLE section_seats (
   UNIQUE (section_id, seat_label)
 );
 
+CREATE TABLE pricing_layouts (
+  id SERIAL PRIMARY KEY,
+  venue_id INTEGER NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
+  seating_layout_id INTEGER NOT NULL REFERENCES seating_layouts(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+
+  UNIQUE (venue_id, seating_layout_id, name)
+);
+
+CREATE TABLE ticket_prices (
+  id SERIAL PRIMARY KEY,
+  pricing_layout_id INTEGER NOT NULL REFERENCES pricing_layouts(id) ON DELETE CASCADE,
+  section_id INTEGER NOT NULL REFERENCES layout_sections(id) ON DELETE CASCADE,
+  seat_id INTEGER REFERENCES section_seats(id) ON DELETE CASCADE,
+  price NUMERIC(10, 2) NOT NULL,
+
+  UNIQUE (pricing_layout_id, seat_id),
+  CHECK (
+    (seat_id IS NULL AND section_id IS NOT NULL) OR
+    (seat_id IS NOT NULL AND section_id IS NOT NULL)
+  )
+);
+
 CREATE TABLE events (
   id SERIAL PRIMARY KEY,
   creator_id INTEGER REFERENCES users(id),
   title TEXT NOT NULL,
   description TEXT,
-  start_datetime TIMESTAMP NOT NULL,
-  end_datetime TIMESTAMP NOT NULL,
+  start_datetime TIMESTAMPTZ NOT NULL,  -- UTC
+  end_datetime TIMESTAMPTZ NOT NULL,    -- UTC
+  timezone TEXT NOT NULL,               -- IANA Timezone 
   venue_id INTEGER NOT NULL REFERENCES venues(id),
-  layout_id INTEGER NOT NULL REFERENCES seating_layouts(id)
+  seating_layout_id INTEGER NOT NULL REFERENCES seating_layouts(id),
+  pricing_layout_id INTEGER NOT NULL REFERENCES pricing_layouts(id)
 );
 
 CREATE TYPE ticket_status AS ENUM ('pending', 'purchased');
@@ -78,3 +103,26 @@ CREATE TABLE venue_users (
 
     PRIMARY KEY (venue_id, user_id)
 );
+
+CREATE OR REPLACE FUNCTION check_pricing_layout_seating_layout_match()
+RETURNS TRIGGER AS $$
+DECLARE
+  seating_layout_id_from_pricing_layout INTEGER;
+BEGIN
+  SELECT seating_layout_id INTO seating_layout_id_from_pricing_layout
+  FROM pricing_layouts
+  WHERE id = NEW.pricing_layout_id;
+
+  IF seating_layout_id_from_pricing_layout <> NEW.seating_layout_id THEN
+    RAISE EXCEPTION 'Pricing seating_layout_id % does not match event seating_layout_id %',
+      seating_layout_id_from_pricing_layout, NEW.seating_layout_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER validate_event_pricing_layout
+BEFORE INSERT OR UPDATE ON events
+FOR EACH ROW
+EXECUTE FUNCTION check_pricing_layout_seating_layout_match();
