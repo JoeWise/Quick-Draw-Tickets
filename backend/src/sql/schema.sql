@@ -23,11 +23,11 @@ CREATE TABLE seating_layouts (
 
 CREATE TABLE layout_sections (
   id SERIAL PRIMARY KEY,
-  layout_id INTEGER NOT NULL REFERENCES seating_layouts(id) ON DELETE CASCADE,
+  seating_layout_id INTEGER NOT NULL REFERENCES seating_layouts(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('assigned', 'ga')),
 
-  UNIQUE (layout_id, name)
+  UNIQUE (seating_layout_id, name)
 );
 
 CREATE TABLE section_seats (

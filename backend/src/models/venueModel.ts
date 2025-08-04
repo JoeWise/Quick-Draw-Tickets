@@ -95,8 +95,8 @@ export async function insertVenueWithOwner(name: string, address: string, lon: n
     });
 }
 
-export async function createSeatingLayoutWithSections(venueID: number, layoutName: string, sections: LayoutSection[]): Promise<void> {
-
+export async function insertSeatingLayoutWithSections(venueID: number, layoutName: string, sections: CreateLayoutSection[])
+{
     await db.queryAsTransaction(async (client) => {
         // Insert seating layout
         const layoutRes = await client.query(
@@ -111,7 +111,7 @@ export async function createSeatingLayoutWithSections(venueID: number, layoutNam
         for (const section of sections) 
         {
             const sectionRes = await client.query(
-                `INSERT INTO layout_sections (layout_id, name, type)
+                `INSERT INTO layout_sections (seating_layout_id, name, type)
                  VALUES ($1, $2, $3)
                  RETURNING id`,
                 [layoutID, section.name, section.type]
