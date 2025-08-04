@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { geocodeIP, geocodeLocation } from '../utils/geocode';
+import { attemptGeocode, geocodeIP, geocodeLocation } from '../utils/geocode';
 import { getClientIp } from '../utils/getClientIP';
 import { findEventsByVenueID } from '../models/eventModels';
 import * as venueModel from '../models/venueModel';
@@ -12,38 +12,18 @@ export async function getNearbyVenues( req: Request, res: Response)
     
     if (!lat || !lon)
     {
-        if (location)
-        {
-            // Geocode location and set lat and lon.
-            const geocoded = await geocodeLocation(location);
-            if (geocoded)
-            {
-                lat = geocoded.lat;
-                lon = geocoded.lon;
-            }
-        }
-        
-        // If location geocoding failed, try IP address.
-        if (!lat || !lon)
-        {
-            // geolocate IP address.
-            const ipAddress = getClientIp(req);
-            if (ipAddress)
-            {
-                const geocoded = await geocodeIP(ipAddress)
-                if (geocoded)
-                {
-                    lat = geocoded.lat;
-                    lon = geocoded.lon;
-                }
-            }
-        }
+        const geo = await attemptGeocode(location, getClientIp(req));
 
-        // If IP address failed, set to deafult (Los Angeles).
-        if (!lat || !lon)
+        // If geocoding failed, set to default (Los Angeles).
+        if (!geo)
         {
             lat = 34.0536909;
             lon = -118.2427660;
+        }
+        else
+        {
+            lat = geo.lat;
+            lon = geo.lon;
         }
     }
 

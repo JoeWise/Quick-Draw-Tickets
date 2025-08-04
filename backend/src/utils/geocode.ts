@@ -1,4 +1,44 @@
-export async function geocodeLocation(location: string): Promise<{ lat: number; lon: number } | null> {
+import { getClientIp } from "./getClientIP";
+
+export async function attemptGeocode(location: string, ipAddress: string): Promise<{ lat: number; lon: number } | null>
+{
+    let lat, lon;
+
+    if (location)
+    {
+        // Geocode location and set lat and lon.
+        const geocoded = await geocodeLocation(location);
+        if (geocoded)
+        {
+            lat = geocoded.lat;
+            lon = geocoded.lon;
+        }
+    }
+    
+    // If location geocoding failed, try IP address.
+    if (!lat || !lon)
+    {
+        // geolocate IP address.
+        if (ipAddress)
+        {
+            const geocoded = await geocodeIP(ipAddress)
+            if (geocoded)
+            {
+                lat = geocoded.lat;
+                lon = geocoded.lon;
+            }
+        }
+    }
+
+    // If IP address failed, return null.
+    if (!lat || !lon)
+        return null;
+    else
+        return { lat, lon };
+}
+
+export async function geocodeLocation(location: string): Promise<{ lat: number; lon: number } | null> 
+{
     const url = new URL('https://nominatim.openstreetmap.org/search');
     url.searchParams.set('q', location);
     url.searchParams.set('format', 'json');
