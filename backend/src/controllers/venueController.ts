@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { attemptGeocode, geocodeIP, geocodeLocation } from '../utils/geocode';
 import { getClientIp } from '../utils/getClientIP';
-import { findEventsByVenueID } from '../models/eventModels';
+import { findEventsByVenueID } from '../models/eventModel';
 import * as venueModel from '../models/venueModel';
 import { AuthenticatedRequest } from '../types/express';
 import { Venue } from '../types/Venue';
