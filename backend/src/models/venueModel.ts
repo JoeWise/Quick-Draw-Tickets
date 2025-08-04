@@ -9,7 +9,7 @@ export async function findVenueByID(id: number): Promise<Venue | undefined>
             SELECT id, name, address, ST_Y(geog::geometry) AS latitude, ST_X(geog::geometry) AS longitude
             FROM venues
             WHERE id = $1
-            `
+            `;
     const params = [id];
 
     const result: QueryResult<Venue> = await db.query(q, params);
