@@ -1,23 +1,24 @@
 import { z } from 'zod';
+import { sectionTypes } from '../types/SectionType';
 
-export const sectionSeatSchema = z.object({
+export const createSectionSeatSchema = z.object({
     row: z.string().nullable().optional(),
     seat_number: z.string(),
 });
 
-export type SectionSeat = z.infer<typeof sectionSeatSchema>;
+export type createSectionSeat = z.infer<typeof createSectionSeatSchema>;
 
-export const layoutSectionSchema = z.object({
+export const createLayoutSectionSchema = z.object({
     name: z.string(),
-    type: z.enum(['assigned', 'ga']),
-    seats: z.array(sectionSeatSchema),
+    type: z.enum(sectionTypes),
+    seats: z.array(createSectionSeatSchema),
 });
 
-export type LayoutSection = z.infer<typeof layoutSectionSchema>;
+export type CreateLayoutSection = z.infer<typeof createLayoutSectionSchema>;
 
-export const seatingLayoutSchema = z.object({
+export const createSeatingLayoutSchema = z.object({
     name: z.string(),
-    sections: z.array(layoutSectionSchema),
+    sections: z.array(createLayoutSectionSchema),
 });
 
 // Example JSON schema:
