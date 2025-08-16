@@ -106,9 +106,7 @@ export async function reserveTickets(req: AuthenticatedRequest, res: Response)
 
     // Validate that the tickets array is not empty
     if (!ticket_reservations || !Array.isArray(ticket_reservations) || ticket_reservations.length === 0)
-    {
         return res.status(400).json({ error: 'No tickets specified for reservation' });
-    }
 
     // Validate that the event exists
     const event = await eventModel.findEventByID(eventID);
