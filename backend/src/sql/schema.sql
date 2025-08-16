@@ -58,7 +58,7 @@ CREATE TABLE seat_prices (
   seat_id INTEGER NOT NULL REFERENCES section_seats(id) ON DELETE CASCADE,
   price NUMERIC(10, 2) NOT NULL,
 
-  UNIQUE (pricing_layout_id, seat_id),
+  UNIQUE (pricing_layout_id, seat_id)
 );
 
 CREATE TABLE events (
@@ -78,14 +78,14 @@ CREATE TYPE ticket_status AS ENUM ('pending', 'purchased');
 
 CREATE TABLE tickets (
   id SERIAL PRIMARY KEY,
-  event_id INTEGER NOT NULL REFERENCES events(id),
   user_id INTEGER NOT NULL REFERENCES users(id),
+  event_id INTEGER NOT NULL REFERENCES events(id),
   section_id INTEGER NOT NULL REFERENCES layout_sections(id),
-  seat_id INTEGER REFERENCES section_seats(id),
+  seat_id INTEGER NOT NULL REFERENCES section_seats(id),
   status ticket_status NOT NULL DEFAULT 'pending',
-  reserved_until TIMESTAMP,
+  reserved_until TIMESTAMPTZ NOT NULL,    -- UTC
   price NUMERIC(10, 2) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   UNIQUE (event_id, seat_id)
 );

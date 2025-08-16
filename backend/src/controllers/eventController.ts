@@ -3,8 +3,11 @@ import { AuthenticatedRequest } from "../types/express";
 import { EventSchema } from '../schemas/createEventSchema';
 import * as venueModel from '../models/venueModel';
 import * as eventModel from '../models/eventModel';
+import * as ticketModel from '../models/ticketModel';
 import { attemptGeocode } from '../utils/geocode';
 import { getClientIp } from '../utils/getClientIP';
+import { GetTicket } from '../schemas/getTicketSchema';
+import { CreateTicketReservation } from '../schemas/createTicketReservation';
 
 export async function getNearbyEvents(req: Request, res: Response)
 {
@@ -90,5 +93,38 @@ export async function createEvent(req: AuthenticatedRequest, res: Response)
     {
         console.error('Error creating event:', err);
         res.status(500).json({ error: "Failed to create event" });
+    }
+}
+
+export async function reserveTickets(req: AuthenticatedRequest, res: Response)
+{
+    const eventID = +req.params.id;
+    const userID = req.user!.id;
+    const ticket_reservations: CreateTicketReservation[] = req.body.ticket_reservations;
+
+    console.log(`Reserving tickets for user ${userID} for event ${eventID}`, ticket_reservations);
+
+    // Validate that the tickets array is not empty
+    if (!ticket_reservations || !Array.isArray(ticket_reservations) || ticket_reservations.length === 0)
+    {
+        return res.status(400).json({ error: 'No tickets specified for reservation' });
+    }
+
+    // Validate that the event exists
+    const event = await eventModel.findEventByID(eventID);
+    if (!event)
+        return res.status(404).json({ error: 'Event not found' });
+
+    try
+    {
+        // Attempt to reserve the tickets for the user
+        const reservation: GetTicket[] = await ticketModel.reserveTickets(userID, eventID, ticket_reservations);
+        
+        return res.status(201).json(reservation);
+    }
+    catch (err)
+    {
+        console.error('Error reserving tickets:', err);
+        res.status(500).json({ error: "Failed to reserve tickets" });
     }
 }
