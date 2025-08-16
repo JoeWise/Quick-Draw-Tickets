@@ -1,14 +1,18 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Load different env files depending on NODE_ENV
+if (process.env.NODE_ENV === 'test') 
+    dotenv.config({ path: '.env.test' });
+else
+    dotenv.config();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL,
 });
 
 export async function query<T extends QueryResultRow = any>(text: string, params?: unknown[]): Promise<QueryResult<T>> {
-  return pool.query(text, params);
+    return pool.query(text, params);
 }
 
 export async function queryAsTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -31,4 +35,9 @@ export async function queryAsTransaction<T>(fn: (client: PoolClient) => Promise<
     }
 }
 
-export default { query, queryAsTransaction };
+export async function end() 
+{
+    await pool.end();
+}
+
+export default { query, queryAsTransaction, end };
